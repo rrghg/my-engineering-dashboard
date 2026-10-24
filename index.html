@@ -877,7 +877,8 @@ const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwpNdve-WwMEdl9FsKY4
 
 function sendToGoogleSheet(moduleName, result, inputData) {
   const dataToSend = {
-    objectName: moduleName,
+    objectName: moduleName,   // можно оставить — попадёт в столбец «Объект»
+    module: moduleName,       // новый столбец «Модуль»
     result: String(result),
     inputData: inputData
   };
