@@ -351,7 +351,7 @@
           <input type="number" id="m1_K" min="0.7" max="1.0" step="0.01" value="0.9" oninput="calculateM1()">
           <div class="error" id="m1_K_err">K должен быть в диапазоне 0.7–1.0</div>
         </div>
-        <button class="btn btn-primary" onclick="calculateM1()">Рассчитать</button>
+        <button class="btn btn-primary" onclick="calculateM1(true)">Рассчитать</button>
       </div>
       <div class="card">
         <h3>Результат</h3>
@@ -389,7 +389,7 @@
           <input type="number" id="m2_P" min="0" step="1" value="1620" oninput="calculateM2()">
           <div class="error" id="m2_P_err">Введите положительное число</div>
         </div>
-        <button class="btn btn-primary" onclick="calculateM2()">Рассчитать</button>
+        <button class="btn btn-primary" onclick="calculateM2(true)">Рассчитать</button>
       </div>
       <div class="card">
         <h3>Результат</h3>
@@ -441,7 +441,7 @@
           <input type="number" id="m3_N" min="1" step="1" value="5" oninput="calculateM3()">
           <div class="error" id="m3_N_err">Введите целое число > 0</div>
         </div>
-        <button class="btn btn-primary" onclick="calculateM3()">Рассчитать</button>
+        <button class="btn btn-primary" onclick="calculateM3(true)">Рассчитать</button>
       </div>
       <div class="card">
         <h3>Результат</h3>
@@ -547,7 +547,7 @@ function validateField(inputId, errorId, condition) {
 }
 
 /* ==================== МОДУЛЬ 1 ==================== */
-function calculateM1() {
+function calculateM1(sendToSheet = false) {
   const tOk = validateField('m1_t', 'm1_t_err', v => !isNaN(v) && v > 0);
   const KOk = validateField('m1_K', 'm1_K_err', v => !isNaN(v) && v >= 0.7 && v <= 1.0);
 
@@ -556,16 +556,29 @@ function calculateM1() {
     setResultCardState('m1_result_card', false);
     return;
   }
+
   const t = parseFloat(document.getElementById('m1_t').value);
   const K = parseFloat(document.getElementById('m1_K').value);
   const P = (3600 / t) * K;
-  state.m1.t = t; state.m1.K = K; state.m1.P = P;
+
+  state.m1.t = t;
+  state.m1.K = K;
+  state.m1.P = P;
+
   setResult('m1_result', P.toFixed(1), 'авто/ч');
   setResultCardState('m1_result_card', true);
+
+  if (sendToSheet) {
+    sendToGoogleSheet(
+      'Модуль 1: Пропускная способность',
+      P.toFixed(1) + ' авто/ч',
+      `t=${t}, K=${K}`
+    );
+  }
 }
 
 /* ==================== МОДУЛЬ 2 ==================== */
-function calculateM2() {
+function calculateM2(sendToSheet = false) {
   const NOk = validateField('m2_N', 'm2_N_err', v => !isNaN(v) && v >= 0);
   const POk = validateField('m2_P', 'm2_P_err', v => !isNaN(v) && v > 0);
 
@@ -575,10 +588,15 @@ function calculateM2() {
     document.getElementById('m2_status').innerHTML = '';
     return;
   }
+
   const N = parseFloat(document.getElementById('m2_N').value);
   const P = parseFloat(document.getElementById('m2_P').value);
   const Z = N / P;
-  state.m2.N = N; state.m2.P = P; state.m2.Z = Z;
+
+  state.m2.N = N;
+  state.m2.P = P;
+  state.m2.Z = Z;
+
   setResult('m2_result', Z.toFixed(3), '');
   setResultCardState('m2_result_card', true);
 
@@ -589,10 +607,17 @@ function calculateM2() {
   document.getElementById('m2_status').innerHTML = badge;
 
   drawChart();
-}
 
+  if (sendToSheet) {
+    sendToGoogleSheet(
+      'Модуль 2: Коэффициент загрузки Z',
+      Z.toFixed(3),
+      `N=${N}, P=${P}`
+    );
+  }
+}
 /* ==================== МОДУЛЬ 3 ==================== */
-function calculateM3() {
+function calculateM3(sendToSheet = false) {
   const LOk = validateField('m3_L', 'm3_L_err', v => !isNaN(v) && v > 0);
   const VOk = validateField('m3_V', 'm3_V_err', v => !isNaN(v) && v > 0);
   const NOk = validateField('m3_N', 'm3_N_err', v => !isNaN(v) && v > 0 && Number.isInteger(v));
@@ -604,16 +629,32 @@ function calculateM3() {
     setResultCardState('m3_I_card', false);
     return;
   }
+
   const L = parseFloat(document.getElementById('m3_L').value);
   const V = parseFloat(document.getElementById('m3_V').value);
   const N = parseInt(document.getElementById('m3_N').value);
+
   const T = (2 * L / V) * 60;
   const I = T / N;
-  state.m3.L = L; state.m3.V = V; state.m3.N = N; state.m3.T = T; state.m3.I = I;
+
+  state.m3.L = L;
+  state.m3.V = V;
+  state.m3.N = N;
+  state.m3.T = T;
+  state.m3.I = I;
+
   setResult('m3_T', T.toFixed(1), 'мин');
   setResult('m3_I', I.toFixed(2), 'мин');
   setResultCardState('m3_T_card', true);
   setResultCardState('m3_I_card', true);
+
+  if (sendToSheet) {
+    sendToGoogleSheet(
+      'Модуль 3: Интервал автобусов',
+      I.toFixed(2) + ' мин',
+      `L=${L}, V=${V}, N=${N}, T=${T.toFixed(1)}`
+    );
+  }
 }
 
 /* ==================== ПЕРЕДАЧА ДАННЫХ ==================== */
@@ -830,6 +871,31 @@ function loadProject() {
     calculateM1(); calculateM2(); calculateM3(); buildReport();
     showToast('📂 Проект загружен');
   } catch (e) { showToast('Ошибка загрузки: ' + e.message, true); }
+}
+/* ==================== ОТПРАВКА В GOOGLE ТАБЛИЦУ ==================== */
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwpNdve-WwMEdl9FsKY4G_DO-pSsREuhb2w6TkSqBrxZqTQ1j21p9NNvOyb-Y35B1Od-Q/exec';
+
+function sendToGoogleSheet(moduleName, result, inputData) {
+  const dataToSend = {
+    objectName: moduleName,
+    result: String(result),
+    inputData: inputData
+  };
+
+  fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(dataToSend)
+  })
+  .then(() => {
+    console.log('Данные отправлены:', dataToSend);
+    showToast('✅ Данные отправлены в Google Таблицу');
+  })
+  .catch(err => {
+    console.error('Ошибка отправки:', err);
+    showToast('❌ Не удалось отправить данные', true);
+  });
 }
 
 /* ==================== УТИЛИТЫ ==================== */
