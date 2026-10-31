@@ -939,7 +939,23 @@ document.addEventListener('DOMContentLoaded', () => {
   <h2>Модуль 4: Работа техники</h2>
   <form id="module4Form">
     <label>Дата <input type="date" name="Дата" required></label><br><br>
-    <label>Вид техники <input type="text" name="Вид техники" required></label><br><br>
+
+    <label>Вид техники
+      <select name="Вид техники" id="m4_tech" required>
+        <option value="">— выберите технику —</option>
+        <option value="Экскаватор">Экскаватор</option>
+        <option value="Бульдозер">Бульдозер</option>
+        <option value="Автогрейдер">Автогрейдер</option>
+        <option value="Каток">Каток</option>
+        <option value="Асфальтоукладчик">Асфальтоукладчик</option>
+        <option value="Автокран">Автокран</option>
+        <option value="Самосвал">Самосвал</option>
+        <option value="Погрузчик">Погрузчик</option>
+        <option value="Фреза дорожная">Фреза дорожная</option>
+        <option value="Компрессор">Компрессор</option>
+      </select>
+    </label><br><br>
+
     <label>Часы <input type="number" name="Часы" min="0.01" step="0.01" required></label><br><br>
     <label>Участок <input type="text" name="Участок" required></label><br><br>
     <button type="submit">Сохранить в таблицу</button>
@@ -948,6 +964,14 @@ document.addEventListener('DOMContentLoaded', () => {
 </section>
 <script>
 const MODULE_NAME = 'Вариант 13. Работа техники';
+
+// Единый источник правды — те же значения, что и в <select>
+const ALLOWED_TECH = [
+  'Экскаватор', 'Бульдозер', 'Автогрейдер', 'Каток',
+  'Асфальтоукладчик', 'Автокран', 'Самосвал', 'Погрузчик',
+  'Фреза дорожная', 'Компрессор'
+];
+
 document.getElementById('module4Form').addEventListener('submit', async function (e) {
   e.preventDefault();
   const form = this;
@@ -964,6 +988,13 @@ document.getElementById('module4Form').addEventListener('submit', async function
       msg.style.color = '#a83a35';
       return;
     }
+  }
+
+  // Защита от подмены значения через DevTools / автозаполнение
+  if (!ALLOWED_TECH.includes(fields['Вид техники'])) {
+    msg.textContent = 'Недопустимый вид техники. Выберите значение из списка.';
+    msg.style.color = '#a83a35';
+    return;
   }
 
   const dataToSend = { module: MODULE_NAME, fields: fields };
